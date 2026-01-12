@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useContacts } from "../ContactContext";
 import { FiSearch } from "react-icons/fi";
-import { HiPlus } from "react-icons/hi";
+import { HiPlus, HiTrash } from "react-icons/hi";
 import { RiUserLine } from "react-icons/ri";
 import { AiFillPlusCircle } from "react-icons/ai";
 import PhoneInput from "react-phone-input-2";
@@ -44,7 +44,8 @@ export default function ContactPage() {
   // 🔥 FIXED: filter using first + last name
   const filteredContacts = contacts.filter((contact) => {
     const fullName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
-    return fullName.toLowerCase().includes(search.toLowerCase());
+    const name = contact.name || fullName;
+    return name.toLowerCase().includes(search.toLowerCase());
   });
 
   const handleAvatarChange = (e) => {
@@ -53,6 +54,29 @@ export default function ContactPage() {
       const reader = new FileReader();
       reader.onloadend = () => setAvatar(reader.result);
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDeleteContact = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to permanently delete this user?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/users/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      if (res.ok) {
+        setContacts(prev => prev.filter(c => c._id !== id && c.id !== id));
+      } else {
+        alert("Failed to delete user");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      alert("Network error");
     }
   };
 
@@ -82,7 +106,10 @@ export default function ContactPage() {
     try {
       const res = await fetch(`${API_BASE}/api/users`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
         body: JSON.stringify(newContact),
       });
 
@@ -133,34 +160,44 @@ export default function ContactPage() {
         <ul>
           {filteredContacts.map((contact) => (
             <li
-              key={contact._id}
-              className="flex items-center gap-3 py-3 border-b"
+              key={contact._id || contact.id}
+              className="flex items-center gap-3 py-3 border-b justify-between"
             >
-              {contact.avatar ? (
+              <div className="flex items-center gap-3">
                 <div className="relative">
-                  <img
-                    src={contact.avatar}
-                    alt={`${contact.firstName} ${contact.lastName}`}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
+                  {contact.avatar ? (
+                    <img
+                      src={contact.avatar}
+                      alt={`${contact.firstName} ${contact.lastName}`}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold">
+                      {contact.initials || `${contact.firstName?.[0] || ""}${contact.lastName?.[0] || ""}`}
+                    </div>
+                  )}
+                  {/* Name Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center px-1 truncate rounded-b-xl">
+                    {(contact.name || contact.firstName || "").split(" ")[0]}
+                  </div>
+
                   {contact.online && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full translate-y-1 translate-x-1" />
                   )}
                 </div>
-              ) : (
-                <div className="relative bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold">
-                  {`${contact.firstName?.[0] || ""}${contact.lastName?.[0] || ""}`}
-                  {contact.online && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                  )}
+                <div>
+                  <p className="font-medium">
+                    {contact.name || `${contact.firstName} ${contact.lastName}`}
+                  </p>
+                  <p className="text-sm text-gray-400">{contact.phone}</p>
                 </div>
-              )}
-              <div>
-                <p className="font-medium">
-                  {contact.firstName} {contact.lastName}
-                </p>
-                <p className="text-sm text-gray-400">{contact.phone}</p>
               </div>
+              <button
+                onClick={(e) => handleDeleteContact(contact._id || contact.id, e)}
+                className="text-red-500 p-2 hover:bg-red-50 rounded-full"
+              >
+                <HiTrash size={20} />
+              </button>
             </li>
           ))}
         </ul>
