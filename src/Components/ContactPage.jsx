@@ -187,7 +187,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="font-medium">
-                    {contact.name || `${contact.firstName} ${contact.lastName}`}
+                    {contact.name || `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || "Unknown User"}
                   </p>
                   <p className="text-sm text-gray-400">{contact.phone}</p>
                 </div>

@@ -394,14 +394,23 @@ export default function ChatPage() {
                     className="flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     onClick={async () => {
                       const contactId = contact._id ?? contact.id;
+                      if (!contactId) return;
+
                       try {
-                        const res = await fetch(
-                          `${API_URL}/messages?contactId=${contactId}`
-                        );
-                        const messages = await res.json();
-                        const lastMsgText = messages.length
-                          ? messages[messages.length - 1].text
-                          : "";
+                        let lastMsgText = "";
+                        try {
+                          const res = await fetch(
+                            `${API_URL}/messages?contactId=${contactId}`
+                          );
+                          if (res.ok) {
+                            const messages = await res.json();
+                            if (Array.isArray(messages) && messages.length > 0) {
+                              lastMsgText = messages[messages.length - 1].text;
+                            }
+                          }
+                        } catch (e) {
+                          console.warn("Failed to fetch messages for preview", e);
+                        }
 
                         await fetch(
                           `${API_URL}/users/${contactId}`,
@@ -418,10 +427,11 @@ export default function ChatPage() {
                         );
 
                         await fetchContacts();
+                      } catch (err) {
+                        console.error("Failed to start chat side effects:", err);
+                      } finally {
                         setShowModal(false);
                         navigate(`/ChatDetails/${contactId}`);
-                      } catch (err) {
-                        console.error("Failed to start chat:", err);
                       }
                     }}
                   >
