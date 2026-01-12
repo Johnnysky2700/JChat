@@ -399,7 +399,10 @@ export default function ChatPage() {
                           `${API_URL}/users/${contact.id}`,
                           {
                             method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            },
                             body: JSON.stringify({
                               lastMessage: lastMsgText,
                             }),
