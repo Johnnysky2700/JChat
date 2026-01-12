@@ -17,13 +17,14 @@ export default function Account() {
   useEffect(() => {
     async function fetchUser() {
       const storedUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (!storedUser?._id) {
+      if (!storedUser?._id && !storedUser?.id) {
         setLoading(false);
         return;
       }
+      const id = storedUser._id || storedUser.id;
 
       try {
-        const res = await fetch(`https://chat-backend-chi-virid.vercel.app/api/user/${storedUser._id}`);
+        const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/users/${id}`);
         const data = await res.json();
 
         if (res.ok && data) {
@@ -53,11 +54,15 @@ export default function Account() {
     localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
     // Auto-save to backend
-    if (user._id) {
+    if (user._id || user.id) {
+      const id = user._id || user.id;
       try {
-        await fetch(`https://chat-backend-chi-virid.vercel.app/api/user/${user._id}`, {
+        await fetch(`${process.env.REACT_APP_API_BASE}/api/users/${id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
           body: JSON.stringify(updatedUser),
         });
       } catch (err) {
@@ -89,10 +94,14 @@ export default function Account() {
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
       // Save to backend
-      if (user._id) {
-        await fetch(`https://chat-backend-chi-virid.vercel.app/api/user/${user._id}`, {
+      if (user._id || user.id) {
+        const id = user._id || user.id;
+        await fetch(`${process.env.REACT_APP_API_BASE}/api/users/${id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
           body: JSON.stringify(updatedUser),
         });
       }
@@ -103,15 +112,20 @@ export default function Account() {
   };
 
   const handleSave = async () => {
-    if (!user._id) {
+    if (!user._id && !user.id) {
       alert('User not logged in. Please login again.');
       return;
     }
 
+    const id = user._id || user.id;
+
     try {
-      const res = await fetch(`https://chat-backend-chi-virid.vercel.app/api/user/${user._id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/users/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify(user),
       });
 

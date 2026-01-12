@@ -13,7 +13,7 @@ export default function StoryPage() {
 
   const fetchStories = useCallback(async () => {
     try {
-      const res = await fetch(`https://chat-backend-chi-virid.vercel.app/api/stories?userId=${userId}`);
+      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/stories?userId=${userId}`);
       const data = await res.json();
       console.log("Fetched stories for userId", userId, data); // Debug log
       const now = new Date();
@@ -24,12 +24,12 @@ export default function StoryPage() {
     } catch (err) {
       console.error(err);
     }
-  }, [userId]);  
+  }, [userId]);
 
   useEffect(() => {
     fetchStories();
   }, [fetchStories]);
-  
+
   useEffect(() => {
     if (!stories.length) return;
 
@@ -103,8 +103,11 @@ export default function StoryPage() {
 
   const handleDelete = async () => {
     try {
-      await fetch(`https://chat-backend-chi-virid.vercel.app/api/stories/${currentStory.id}`, {
+      await fetch(`${process.env.REACT_APP_API_BASE}/api/stories/${currentStory._id || currentStory.id}`, {
         method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
       });
       alert("Story deleted");
       await fetchStories();
@@ -148,9 +151,8 @@ export default function StoryPage() {
           {/* Text */}
           {currentStory.text && (
             <div
-              className={`absolute px-6 text-lg font-medium text-white text-center w-full ${
-                currentStory.file ? "bottom-6" : "top-1/2 transform -translate-y-1/2"
-              }`}
+              className={`absolute px-6 text-lg font-medium text-white text-center w-full ${currentStory.file ? "bottom-6" : "top-1/2 transform -translate-y-1/2"
+                }`}
             >
               {currentStory.text}
             </div>
