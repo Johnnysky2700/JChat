@@ -244,36 +244,43 @@ export default function ChatPage() {
       <ul>
         {filteredContacts.map((contact) => (
           <li
-            key={contact.id}
+            key={contact._id ?? contact.id}
             className="flex items-center justify-between py-4 border-b transition hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <div
               className="flex gap-3 items-center cursor-pointer w-full"
-              onClick={() =>
+              onClick={() => {
+                const contactId = contact._id ?? contact.id;
                 selectMode
-                  ? toggleChatSelection(contact.id)
-                  : navigate(`/ChatDetails/${contact.id}`)
-              }
+                  ? toggleChatSelection(contactId)
+                  : navigate(`/ChatDetails/${contactId}`)
+              }}
             >
               {selectMode && (
                 <input
                   type="checkbox"
-                  checked={selectedChats.includes(contact.id)}
-                  onChange={() => toggleChatSelection(contact.id)}
+                  checked={selectedChats.includes(contact._id ?? contact.id)}
+                  onChange={() => toggleChatSelection(contact._id ?? contact.id)}
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
-              {contact.avatar ? (
-                <img
-                  src={contact.avatar}
-                  alt={contact.name}
-                  className="rounded-xl object-cover w-12 h-12"
-                />
-              ) : (
-                <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-semibold">
-                  {contact.initials}
+              <div className="relative">
+                {contact.avatar ? (
+                  <img
+                    src={contact.avatar}
+                    alt={contact.name}
+                    className="rounded-xl object-cover w-12 h-12"
+                  />
+                ) : (
+                  <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-semibold">
+                    {contact.initials}
+                  </div>
+                )}
+                {/* Name Overlay requested by user */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center px-1 truncate rounded-b-xl">
+                  {contact.name?.split(" ")[0]}
                 </div>
-              )}
+              </div>
               <div>
                 <p className="font-medium">{contact.name}</p>
                 <p className="text-gray-400 text-sm">
@@ -383,12 +390,13 @@ export default function ChatPage() {
                 )
                 .map((contact) => (
                   <li
-                    key={contact.id}
+                    key={contact._id ?? contact.id}
                     className="flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     onClick={async () => {
+                      const contactId = contact._id ?? contact.id;
                       try {
                         const res = await fetch(
-                          `${API_URL}/messages?contactId=${contact.id}`
+                          `${API_URL}/messages?contactId=${contactId}`
                         );
                         const messages = await res.json();
                         const lastMsgText = messages.length
@@ -396,7 +404,7 @@ export default function ChatPage() {
                           : "";
 
                         await fetch(
-                          `${API_URL}/users/${contact.id}`,
+                          `${API_URL}/users/${contactId}`,
                           {
                             method: "PATCH",
                             headers: {
@@ -411,7 +419,7 @@ export default function ChatPage() {
 
                         await fetchContacts();
                         setShowModal(false);
-                        navigate(`/ChatDetails/${contact.id}`);
+                        navigate(`/ChatDetails/${contactId}`);
                       } catch (err) {
                         console.error("Failed to start chat:", err);
                       }
