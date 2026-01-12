@@ -8,6 +8,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import AttachmentMenu from "./AttachmentMenu";
 import PollModal from "./PollModal";
 import EventModal from "./EventModal";
+import { useSocket } from "../context/SocketContext";
+import { useContacts } from "../ContactContext";
+
+const API_URL = "http://localhost:3000/api";
 
 export default function ChatDetails() {
   const [message, setMessage] = useState("");
@@ -24,6 +28,9 @@ export default function ChatDetails() {
   const [selectedMessages, setSelectedMessages] = useState([]);
   const [selectMode, setSelectMode] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+
+  const socket = useSocket();
+  const { currentUser } = useContacts();
 
   const bottomRef = useRef(null);
   const navigate = useNavigate();
@@ -43,7 +50,7 @@ export default function ChatDetails() {
       try {
         await Promise.all(
           selectedMessages.map((msgId) =>
-            fetch(`https://chat-backend-chi-virid.vercel.app/api/messages/${msgId}`, {
+            fetch(`${API_URL}/messages/${msgId}`, {
               method: "DELETE",
             })
           )
@@ -118,7 +125,7 @@ export default function ChatDetails() {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const msgRes = await fetch(`https://chat-backend-chi-virid.vercel.app/api/messages`);
+        const msgRes = await fetch(`${API_URL}/messages`);
         let msgData = [];
         if (msgRes.ok) msgData = await msgRes.json();
 
@@ -129,7 +136,7 @@ export default function ChatDetails() {
 
         // If /messages is empty, use contact.messages
         if (filtered.length === 0) {
-          const contactRes = await fetch(`https://chat-backend-chi-virid.vercel.app/api/users/${id}`);
+          const contactRes = await fetch(`${API_URL}/users/${id}`);
           const contactData = await contactRes.json();
           filtered = contactData.messages || [];
         }
@@ -153,7 +160,7 @@ export default function ChatDetails() {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        const res = await fetch(`https://chat-backend-chi-virid.vercel.app/api/users/${id}`);
+        const res = await fetch(`${API_URL}/users/${id}`);
         const data = await res.json();
         setContact(data);
       } catch (error) {
@@ -195,13 +202,13 @@ export default function ChatDetails() {
     };
 
     try {
-      await fetch(`https://chat-backend-chi-virid.vercel.app/messages`, {
+      await fetch(`${API_URL}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newMessage),
       });
 
-      await fetch(`https://chat-backend-chi-virid.vercel.app/api/users/${id}`, {
+      await fetch(`${API_URL}/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,12 +217,53 @@ export default function ChatDetails() {
       });
 
       setMessages((prev) => [...prev, newMessage]);
+
+      // Emit socket message
+      if (socket) {
+        socket.emit("send_message", {
+          to: id, // Recipient ID
+          message: {
+            ...newMessage,
+            sender: currentUser?.id || "user-123", // Send actual ID, not "you"
+          },
+        });
+      }
+
       setMessage("");
       setAttachmentPreview(null);
     } catch (err) {
       console.error("Failed to send message:", err);
     }
   };
+
+  // Listen for incoming messages
+  useEffect(() => {
+    if (!socket) return;
+
+    // Join my own room to receive messages
+    const myId = currentUser?.id || "user-123";
+    socket.emit("join", myId);
+
+    const handleReceiveMessage = (incomingMsg) => {
+      console.log("Received message:", incomingMsg);
+      // Only add to messages if it belongs to this chat
+      // incomingMsg.sender should be the contactId of the current chat
+      // OR incomingMsg.contactId if self-sent (not case here)
+
+      // The message sent via socket has 'sender' = userId of sender.
+      // If that sender is the current 'id' (contact we are chatting with), add it.
+      if (incomingMsg.sender === id || incomingMsg.contactId === id) {
+        setMessages((prev) => [...prev, incomingMsg]);
+        setFilteredMessages((prev) => [...prev, incomingMsg]);
+      }
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+
+    return () => {
+      socket.off("receive_message", handleReceiveMessage);
+    };
+  }, [socket, currentUser, id]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black relative">

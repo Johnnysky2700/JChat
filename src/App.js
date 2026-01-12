@@ -11,6 +11,7 @@ import MorePage from "./Components/MorePage";
 import ChatDetails from "./Components/ChatDetails";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ContactProvider, useContacts } from "./ContactContext";
+import { SocketProvider } from "./context/SocketContext";
 import Account from "./Components/Account";
 import Appearance from "./Components/Appearance";
 import StoryPage from "./Components/StoryPage";
@@ -88,7 +89,9 @@ function App() {
   return (
     <ThemeProvider>
       <ContactProvider>
-        <AppWithContext />
+        <SocketProvider>
+          <AppWithContext />
+        </SocketProvider>
       </ContactProvider>
     </ThemeProvider>
   );

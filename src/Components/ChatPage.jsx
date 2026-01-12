@@ -8,6 +8,8 @@ import Footer from "./Footer";
 import StoryBar from "./StoryBar";
 import StoryModal from "./StoryModal";
 
+const API_URL = "http://localhost:3000/api";
+
 export default function ChatPage() {
   const { contacts, setContacts, currentUser } = useContacts();
   const [selectedChats, setSelectedChats] = useState([]);
@@ -27,7 +29,7 @@ export default function ChatPage() {
 
   // Move fetchStories outside useEffect so it can be reused
   const fetchStories = useCallback(async () => {
-    const res = await fetch("https://chat-backend-chi-virid.vercel.app/api/stories");
+    const res = await fetch(`${API_URL}/stories`);
     const data = await res.json();
     console.log("Fetched stories:", data); // Log all fetched stories
     const now = new Date();
@@ -50,7 +52,7 @@ export default function ChatPage() {
 
   const fetchContacts = useCallback(async () => {
     try {
-      const res = await fetch("https://chat-backend-chi-virid.vercel.app/api/users");
+      const res = await fetch(`${API_URL}/users`);
       const data = await res.json();
       setContacts(data);
     } catch (err) {
@@ -72,7 +74,7 @@ export default function ChatPage() {
     try {
       await Promise.all(
         selectedChats.map((id) =>
-          fetch(`https://chat-backend-chi-virid.vercel.app/api/users/${id}`, { method: "DELETE" })
+          fetch(`${API_URL}/users/${id}`, { method: "DELETE" })
         )
       );
       fetchContacts();
@@ -98,7 +100,7 @@ export default function ChatPage() {
     };
 
     try {
-      const response = await fetch("https://chat-backend-chi-virid.vercel.app/api/stories", {
+      const response = await fetch(`${API_URL}/stories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newStory),
@@ -386,7 +388,7 @@ export default function ChatPage() {
                     onClick={async () => {
                       try {
                         const res = await fetch(
-                          `http://localhost:8000/messages?contactId=${contact.id}`
+                          `${API_URL}/messages?contactId=${contact.id}`
                         );
                         const messages = await res.json();
                         const lastMsgText = messages.length
@@ -394,7 +396,7 @@ export default function ChatPage() {
                           : "";
 
                         await fetch(
-                          `http://localhost:8000/api/users/${contact.id}`,
+                          `${API_URL}/users/${contact.id}`,
                           {
                             method: "PATCH",
                             headers: { "Content-Type": "application/json" },
