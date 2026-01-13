@@ -22,6 +22,10 @@ export const SocketProvider = ({ children }) => {
             // auth: { token: '...' }
         });
 
+        newSocket.on("connect_error", (err) => {
+            console.error("Socket connection error:", err);
+        });
+
         setSocket(newSocket);
 
         // Cleanup on unmount

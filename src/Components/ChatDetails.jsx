@@ -31,6 +31,31 @@ export default function ChatDetails() {
 
   const socket = useSocket();
   const { currentUser } = useContacts();
+  const [isConnected, setIsConnected] = useState(socket?.connected || false);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    setIsConnected(socket.connected);
+
+    const onConnect = () => {
+      console.log("Socket connected:", socket.id);
+      setIsConnected(true);
+    };
+
+    const onDisconnect = () => {
+      console.log("Socket disconnected");
+      setIsConnected(false);
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+    };
+  }, [socket]);
 
   const bottomRef = useRef(null);
   const navigate = useNavigate();
@@ -227,7 +252,7 @@ export default function ChatDetails() {
           to: id, // Recipient ID
           message: {
             ...newMessage,
-            sender: currentUser?.id || "user-123", // Send actual ID, not "you"
+            sender: currentUser?._id || currentUser?.id, // Send actual ID
           },
         });
       }
@@ -244,7 +269,12 @@ export default function ChatDetails() {
     if (!socket) return;
 
     // Join my own room to receive messages
-    const myId = currentUser?.id || "user-123";
+    const myId = currentUser?._id || currentUser?.id;
+    if (!myId) {
+      console.warn("No current user ID found, cannot join socket room");
+      return;
+    }
+
     socket.emit("join", myId);
 
     const handleReceiveMessage = (incomingMsg) => {
@@ -277,9 +307,14 @@ export default function ChatDetails() {
             className="text-xl cursor-pointer dark:text-white"
             onClick={() => navigate("/ChatPage")}
           />
-          <h2 className="text-base dark:text-white">
-            {contact?.name || "Loading..."}
-          </h2>
+          <div>
+            <h2 className="text-base dark:text-white">
+              {contact?.name || "Loading..."}
+            </h2>
+            <span className={`text-xs ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
+              {isConnected ? 'Real-time On' : 'Connecting...'}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-2xl text-black dark:text-white relative">
