@@ -155,15 +155,33 @@ export default function ChatDetails() {
         if (msgRes.ok) msgData = await msgRes.json();
 
         // Filter if /messages exists
-        let filtered = msgData.filter(
-          (msg) => String(msg.contactId) === String(id)
-        );
+        // We want messages where (sender == me AND contactId == them) OR (sender == them AND contactId == me)
+        const myId = currentUser?._id || currentUser?.id || currentUser?.externalId;
 
-        // If /messages is empty, use contact.messages
+        let filtered = msgData.filter((msg) => {
+          const isSentByMe = String(msg.sender) === String(myId) && String(msg.contactId) === String(id);
+          const isReceived = String(msg.sender) === String(id) && String(msg.contactId) === String(myId);
+
+          // Legacy support: if backend logic was just 'contactId' = chat partner for both sides
+          // But based on my reasoning, we need bidirectional check.
+          // Fallback: the original code just checked contactId === id.
+          // If the backend stores 'contactId' as 'the other person', then:
+          // - Sent: sender=me, contactId=them
+          // - Received: sender=them, contactId=me
+
+          return isSentByMe || isReceived;
+        });
+
+        // If filtering returns nothing, maybe the 'contactId' purely means "Conversation ID" in simple app?
+        // If so, restore original if needed, but let's try this first.
+
+        // If /messages is empty, use contact.messages (legacy)
         if (filtered.length === 0) {
           const contactRes = await fetch(`${API_URL}/users/${id}`);
-          const contactData = await contactRes.json();
-          filtered = contactData.messages || [];
+          if (contactRes.ok) {
+            const contactData = await contactRes.json();
+            filtered = contactData.messages || [];
+          }
         }
 
         // Sort by timestamp if available
@@ -216,8 +234,14 @@ export default function ChatDetails() {
   const handleSendMessage = async () => {
     if (!message.trim() && !attachmentPreview) return;
 
+    const myId = currentUser?._id || currentUser?.id || currentUser?.externalId;
+    if (!myId) {
+      alert("You must be logged in to send messages");
+      return;
+    }
+
     const newMessage = {
-      sender: "you",
+      sender: myId,
       text: message,
       timestamp: new Date().toISOString(),
       contactId: id,
@@ -252,7 +276,7 @@ export default function ChatDetails() {
           to: id, // Recipient ID
           message: {
             ...newMessage,
-            sender: currentUser?._id || currentUser?.id, // Send actual ID
+            sender: myId, // valid ID
           },
         });
       }
@@ -279,13 +303,9 @@ export default function ChatDetails() {
 
     const handleReceiveMessage = (incomingMsg) => {
       console.log("Received message:", incomingMsg);
-      // Only add to messages if it belongs to this chat
-      // incomingMsg.sender should be the contactId of the current chat
-      // OR incomingMsg.contactId if self-sent (not case here)
-
-      // The message sent via socket has 'sender' = userId of sender.
-      // If that sender is the current 'id' (contact we are chatting with), add it.
-      if (incomingMsg.sender === id || incomingMsg.contactId === id) {
+      // Check if this message belongs to the current open chat
+      // It belongs if the SENDER is the current contact ID 'id'
+      if (String(incomingMsg.sender) === String(id)) {
         setMessages((prev) => [...prev, incomingMsg]);
         setFilteredMessages((prev) => [...prev, incomingMsg]);
       }
