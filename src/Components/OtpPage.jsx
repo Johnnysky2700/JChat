@@ -13,7 +13,7 @@ export default function OtpPage() {
   const [otp, setOtp] = useState("");
   const [showKeypad, setShowKeypad] = useState(true);
 
-  const API_BASE = process.env.REACT_APP_API_BASE || "https://chat-backend-chi-virid.vercel.app";
+  const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
   const keypadNumbers = [
     "1", "2", "3",
@@ -24,26 +24,21 @@ export default function OtpPage() {
 
   // TEST EMAILS FOR DEVELOPMENT
   const testEmails = {
+    // Existing test users
     "seyi@example.com": {
       code: "123456",
-      user: {
-        email: "seyi@example.com",
-        firstName: "Seyi",
-        lastName: "Johnson",
-        avatar: "",
-        phone: ""
-      }
+      user: { email: "seyi@example.com", firstName: "Seyi", lastName: "Johnson" }
     },
     "john@example.com": {
       code: "654321",
-      user: {
-        email: "john@example.com",
-        firstName: "John",
-        lastName: "Doe",
-        avatar: "",
-        phone: ""
-      }
-    }
+      user: { email: "john@example.com", firstName: "John", lastName: "Doe" }
+    },
+    // Seeded Users
+    "seed-1@example.com": { code: "123456", user: { email: "seed-1@example.com", id: "1" } },
+    "seed-2@example.com": { code: "123456", user: { email: "seed-2@example.com", id: "2" } },
+    "seed-3@example.com": { code: "123456", user: { email: "seed-3@example.com", id: "3" } },
+    "seed-4@example.com": { code: "123456", user: { email: "seed-4@example.com", id: "4" } },
+    "seed-5@example.com": { code: "123456", user: { email: "seed-5@example.com", id: "5" } },
   };
 
   const handleInput = async (value) => {

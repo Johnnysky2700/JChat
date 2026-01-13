@@ -18,16 +18,18 @@ export default function VerifyPage() {
     setError(""); // Clear previous error
 
     if (!username || username.length < 2) {
-      setError("Enter a valid username.");
+      setError("Enter a valid username or email.");
       return;
     }
 
+    // Allow full email or append domain
     const email = username.includes("@") ? username : username + domain;
 
     setLoading(true);
     try {
+      const API_URL = "http://localhost:3000/api/auth/send-otp"; // Use local for dev
       const response = await fetch(
-        "https://chat-backend-chi-virid.vercel.app/api/auth/send-otp",
+        API_URL,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
