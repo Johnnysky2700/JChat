@@ -70,8 +70,12 @@ export default function StoryBar({ currentUser, contacts, stories, onStoryUpload
         {/* Current user's latest story (if any) */}
         {currentUserStory && (
           <div
-            key={currentUserStory.id}
-            onClick={() => navigate(`/story/${currentUser.id}`)}
+            key={currentUserStory.id || currentUserStory._id}
+            onClick={() => {
+              const id = currentUser._id || currentUser.id;
+              if (id) navigate(`/story/${id}`);
+              else console.error("Missing currentUser ID for story navigation");
+            }}
             className="flex flex-col items-center cursor-pointer"
           >
             <div className="relative">
@@ -101,8 +105,12 @@ export default function StoryBar({ currentUser, contacts, stories, onStoryUpload
         {/* Contacts' latest stories */}
         {latestStoryByUser.map((story) => (
           <div
-            key={story.id}
-            onClick={() => navigate(`/story/${story.contact.id}`)}
+            key={story.id || story._id}
+            onClick={() => {
+              const id = story.contact._id || story.contact.id;
+              if (id) navigate(`/story/${id}`);
+              else console.error("Missing contact ID for story navigation", story.contact);
+            }}
             className="flex flex-col items-center cursor-pointer"
           >
             <div className="relative">

@@ -13,6 +13,10 @@ export default function StoryPage() {
   const [showMenu, setShowMenu] = useState(false);
 
   const fetchStories = useCallback(async () => {
+    if (!userId || userId === "undefined") {
+      console.warn("StoryPage: Invalid or missing userId", userId);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/stories?userId=${userId}`);
       const data = await res.json();

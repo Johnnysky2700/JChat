@@ -63,9 +63,14 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
         body: JSON.stringify(newStory),
       });
 
+      const currentUserId = currentUser?._id || currentUser?.id;
       onClose();
       onStoryUpload?.();
-      navigate("/ChatPage");
+      if (currentUserId) {
+        navigate(`/story/${currentUserId}`);
+      } else {
+        navigate("/ChatPage");
+      }
     } catch (err) {
       console.error("Upload failed", err);
       alert("Upload failed. Check server logs.");
