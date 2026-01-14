@@ -318,7 +318,7 @@ export default function ChatDetails() {
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
-  }, [socket, currentUser?._id, currentUser?.id, contact?._id, contact?.id, id]);
+  }, [socket, currentUser, contact?._id, contact?.id, id]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black relative">
