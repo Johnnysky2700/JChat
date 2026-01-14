@@ -14,7 +14,6 @@ export default function StoryPage() {
 
   const [stories, setStories] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const timerRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -44,6 +43,20 @@ export default function StoryPage() {
     fetchStories();
   }, [fetchStories]);
 
+  const goNext = useCallback(() => {
+    if (currentIndex < stories.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      navigate(-1);
+    }
+  }, [currentIndex, stories.length, navigate]);
+
+  const goPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  }, [currentIndex]);
+
   useEffect(() => {
     if (!stories.length) return;
 
@@ -67,21 +80,7 @@ export default function StoryPage() {
     }, interval);
 
     return () => clearInterval(progressTimer);
-  }, [currentIndex, stories]);
-
-  const goNext = () => {
-    if (currentIndex < stories.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      navigate(-1);
-    }
-  };
-
-  const goPrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
+  }, [currentIndex, stories, goNext]);
 
   if (stories.length === 0) {
     return (
