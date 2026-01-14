@@ -34,7 +34,7 @@ export default function ChatPage() {
     console.log("Fetched stories:", data); // Log all fetched stories
     const now = new Date();
     const valid = data
-      .filter((story) => new Date(story.expiresAt) > now)
+      .filter((story) => !story.expiresAt || new Date(story.expiresAt) > now)
       .map((s) => {
         // Ensure userId is present
         const userId = s.userId || s.user?._id || s.user?.id;

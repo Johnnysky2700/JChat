@@ -19,7 +19,7 @@ export default function StoryPage() {
       console.log("Fetched stories for userId", userId, data); // Debug log
       const now = new Date();
       const validStories = data.filter(
-        (story) => new Date(story.expiresAt) > now
+        (story) => !story.expiresAt || new Date(story.expiresAt) > now
       );
       setStories(validStories);
     } catch (err) {

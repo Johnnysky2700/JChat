@@ -46,18 +46,20 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
       }
 
       const newStory = {
-        userId: currentUser?.id,
+        userId: currentUser?._id || currentUser?.id,
         text: storyText,
         file: fileUrl,
         bgColor: !storyFile ? bgColor : null,
-        createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 86400000).toISOString(),
       };
 
-      // save story to db.json (JSON-server)
+      // save story to db.json (JSON-server) -> Updated to Express Mongo backend
       await fetch(`${API_BASE}/api/stories`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
         body: JSON.stringify(newStory),
       });
 
