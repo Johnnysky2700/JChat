@@ -41,11 +41,16 @@ export default function ChatPage() {
       })
       .map((s) => {
         // Ensure userId is present
-        const userId = s.userId || s.user?._id || s.user?.id || s.userId?._id;
+        // Handle cases where userId is an object or a string
+        const userId =
+          (typeof s.userId === 'object' ? (s.userId._id || s.userId.id) : s.userId) ||
+          s.user?._id ||
+          s.user?.id;
+
         if (!userId) {
-          console.warn("Story missing userId (checked s.userId, s.user._id, s.user.id, s.userId._id):", s);
+          console.warn("Story missing userId (checked s.userId, s.user._id, s.user.id):", s);
         }
-        return userId ? { ...s, userId } : null;
+        return userId ? { ...s, userId: userId.toString() } : null;
       })
       .filter(Boolean);
     console.log("VALID stories to be set:", valid);
