@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { XMarkIcon, PhotoIcon } from "@heroicons/react/24/outline";
 
 const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
 export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
+  const navigate = useNavigate();
   const [storyText, setStoryText] = useState("");
   const [storyFile, setStoryFile] = useState(null);
   const [bgColor, setBgColor] = useState("#1E1E1E");
@@ -61,6 +63,7 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
 
       onClose();
       onStoryUpload?.();
+      navigate("/ChatPage");
     } catch (err) {
       console.error("Upload failed", err);
       alert("Upload failed. Check server logs.");
@@ -73,7 +76,10 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
       <div className="absolute top-4 right-4 z-50 bg-black bg-opacity-60 rounded-full p-1">
         <XMarkIcon
           className="w-6 h-6 cursor-pointer text-white"
-          onClick={onClose}
+          onClick={() => {
+            onClose();
+            navigate("/ChatPage");
+          }}
         />
       </div>
 

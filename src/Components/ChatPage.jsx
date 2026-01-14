@@ -18,8 +18,6 @@ export default function ChatPage() {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [showFullModal, setShowFullModal] = useState(false);
-  const [storyText, setStoryText] = useState("");
-  const [storyFile, setStoryFile] = useState(null);
   const [modalSearch, setModalSearch] = useState("");
   // ✅ ADDED missing state
 
@@ -38,11 +36,12 @@ export default function ChatPage() {
     const valid = data
       .filter((story) => new Date(story.expiresAt) > now)
       .map((s) => {
-        // Only set userId if it exists, otherwise log a warning
-        if (!s.userId) {
+        // Ensure userId is present
+        const userId = s.userId || s.user?._id || s.user?.id;
+        if (!userId) {
           console.warn("Story missing userId:", s);
         }
-        return s.userId ? { ...s, userId: s.userId } : null;
+        return userId ? { ...s, userId } : null;
       })
       .filter(Boolean);
     setStories(valid);
@@ -109,52 +108,6 @@ export default function ChatPage() {
     }
   };
 
-  const handleUploadStory = async () => {
-    if (!storyText && !storyFile) {
-      alert("Please add text or select a file.");
-      return;
-    }
-
-    const newStory = {
-      userId: currentUserId,
-      text: storyText,
-      file: storyFile ? URL.createObjectURL(storyFile) : null,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
-
-    try {
-      const response = await fetch(`${API_URL}/stories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newStory),
-      });
-      console.log("Posted story:", newStory); // Log posted story
-      if (!response.ok) throw new Error("Upload failed");
-
-      alert("Story uploaded!");
-      setShowFullModal(false);
-      setStoryText("");
-      setStoryFile(null);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to upload story");
-    }
-  };
-
-  const previewUrl = useMemo(() => {
-    if (!storyFile) return null;
-    return URL.createObjectURL(storyFile);
-  }, [storyFile]);
-
-  // ✅ Revoke preview URL to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
 
   const filteredContacts = contacts.filter(
     (contact) =>
@@ -237,8 +190,6 @@ export default function ChatPage() {
           currentUser={currentUser}
           onClose={() => setShowFullModal(false)}
           onStoryUpload={() => {
-            setStoryText("");
-            setStoryFile(null);
             fetchStories(); // Refresh stories after upload
           }}
         />
@@ -315,82 +266,7 @@ export default function ChatPage() {
           </li>
         ))}
       </ul>
-
       <Footer />
-
-      {/* Upload Story Modal */}
-      {showFullModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-lg w-80 text-black dark:text-white relative">
-            <button
-              onClick={() => {
-                setShowFullModal(false);
-                setStoryFile(null);
-                setStoryText("");
-              }}
-              className="absolute top-2 right-3 text-gray-400 hover:text-white"
-            >
-              ×
-            </button>
-
-            <h2 className="text-lg font-semibold mb-4">Add New Story</h2>
-
-            <div className="relative mb-3">
-              <textarea
-                placeholder="Say something..."
-                value={storyText}
-                onChange={(e) => setStoryText(e.target.value)}
-                className="w-full p-2 pl-10 rounded border dark:bg-gray-800 dark:border-gray-600"
-              />
-              <span className="absolute left-3 top-2.5 text-xl text-gray-400">
-                💬
-              </span>
-            </div>
-
-            {previewUrl && (
-              <div className="mb-4 relative w-full max-h-48 rounded overflow-hidden">
-                {storyFile?.type?.startsWith("image/") ? (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded"
-                  />
-                ) : storyFile?.type?.startsWith("video/") ? (
-                  <video
-                    controls
-                    src={previewUrl}
-                    className="w-full h-48 object-cover rounded"
-                  />
-                ) : null}
-                {storyText && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-sm p-1 text-center">
-                    {storyText}
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="flex items-center justify-center">
-              <label className="cursor-pointer text-3xl">
-                📷
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={(e) => setStoryFile(e.target.files[0])}
-                  className="hidden"
-                />
-              </label>
-            </div>
-
-            <button
-              className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-              onClick={handleUploadStory}
-              disabled={!storyText && !storyFile}
-            >
-              Upload
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* New Chat Modal */}
       {showModal && (

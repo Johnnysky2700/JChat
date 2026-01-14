@@ -10,9 +10,10 @@ export default function StoryBar({ currentUser, contacts, stories, onStoryUpload
 
   // Find the current user's latest story
   let currentUserStory = null;
-  if (currentUser && currentUser.id) {
+  if (currentUser && (currentUser.id || currentUser._id)) {
+    const currentUserId = (currentUser.id || currentUser._id).toString();
     const userStories = stories.filter(
-      (s) => s.userId?.toString() === currentUser.id?.toString()
+      (s) => s.userId?.toString() === currentUserId
     );
     if (userStories.length) {
       currentUserStory = userStories.reduce((a, b) =>
@@ -23,10 +24,11 @@ export default function StoryBar({ currentUser, contacts, stories, onStoryUpload
 
   const latestStoryByUser = contacts
     .map((contact) => {
+      const contactId = contact._id || contact.id;
       const userStories = stories.filter(
         (s) =>
-          s.userId?.toString() === contact.id?.toString() ||
-          s.contactId?.toString() === contact.id?.toString()
+          s.userId?.toString() === contactId?.toString() ||
+          s.contactId?.toString() === contactId?.toString()
       );
       if (!userStories.length) return null;
       const latest = userStories.reduce((a, b) =>
