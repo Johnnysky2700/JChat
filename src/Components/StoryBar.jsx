@@ -93,7 +93,7 @@ export default function StoryBar({ currentUser, contacts, stories, onStoryUpload
               </span>
             </div>
             <p className="text-xs mt-1 truncate w-16 text-center select-none">
-              {(currentUser.name || "You").split(" ")[0]}
+              {(currentUser?.name || "You").split(" ")[0]}
             </p>
           </div>
         )}
@@ -124,7 +124,7 @@ export default function StoryBar({ currentUser, contacts, stories, onStoryUpload
               </span>
             </div>
             <p className="text-xs mt-1 truncate w-16 text-center select-none">
-              {story.contact.name.split(" ")[0]}
+              {(story.contact.name || "Unknown").split(" ")[0]}
             </p>
           </div>
         ))}
