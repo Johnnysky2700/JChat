@@ -17,9 +17,9 @@ export const SocketProvider = ({ children }) => {
     useEffect(() => {
         // Create socket connection
         const newSocket = io(SOCKET_URL, {
-            transports: ["websocket"],
-            // Add authentication token if needed
-            // auth: { token: '...' }
+            transports: ["websocket", "polling"],
+            reconnectionAttempts: 5,
+            timeout: 10000,
         });
 
         newSocket.on("connect_error", (err) => {

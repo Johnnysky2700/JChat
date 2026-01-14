@@ -31,19 +31,24 @@ export default function ChatPage() {
   const fetchStories = useCallback(async () => {
     const res = await fetch(`${API_URL}/stories`);
     const data = await res.json();
-    console.log("Fetched stories:", data); // Log all fetched stories
+    console.log("RAW stories from backend:", data); // Log raw data
     const now = new Date();
     const valid = data
-      .filter((story) => !story.expiresAt || new Date(story.expiresAt) > now)
+      .filter((story) => {
+        const isNotExpired = !story.expiresAt || new Date(story.expiresAt) > now;
+        if (!isNotExpired) console.log("Removed expired story:", story._id || story.id);
+        return isNotExpired;
+      })
       .map((s) => {
         // Ensure userId is present
-        const userId = s.userId || s.user?._id || s.user?.id;
+        const userId = s.userId || s.user?._id || s.user?.id || s.userId?._id;
         if (!userId) {
-          console.warn("Story missing userId:", s);
+          console.warn("Story missing userId (checked s.userId, s.user._id, s.user.id, s.userId._id):", s);
         }
         return userId ? { ...s, userId } : null;
       })
       .filter(Boolean);
+    console.log("VALID stories to be set:", valid);
     setStories(valid);
   }, []);
 

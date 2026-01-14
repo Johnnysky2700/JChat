@@ -5,6 +5,8 @@ import StoryModal from "./StoryModal"; // Make sure this path is correct
 
 export default function StoryBar({ currentUser, contacts, stories, onStoryUpload }) {
   console.log("StoryBar received stories:", stories); // Debug log
+  console.log("StoryBar currentUser:", currentUser);
+  console.log("StoryBar contacts count:", contacts?.length);
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
 
