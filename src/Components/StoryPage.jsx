@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FiMoreVertical, FiShare2, FiDownload, FiTrash2, FiSend } from "react-icons/fi";
 
 export default function StoryPage() {
+  const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
   const { userId } = useParams();
   const navigate = useNavigate();
 
@@ -13,7 +14,7 @@ export default function StoryPage() {
 
   const fetchStories = useCallback(async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/stories?userId=${userId}`);
+      const res = await fetch(`${API_BASE}/api/stories?userId=${userId}`);
       const data = await res.json();
       console.log("Fetched stories for userId", userId, data); // Debug log
       const now = new Date();
@@ -103,7 +104,7 @@ export default function StoryPage() {
 
   const handleDelete = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_BASE}/api/stories/${currentStory._id || currentStory.id}`, {
+      await fetch(`${API_BASE}/api/stories/${currentStory._id || currentStory.id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`

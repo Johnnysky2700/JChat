@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from "react";
 import { XMarkIcon, PhotoIcon } from "@heroicons/react/24/outline";
+
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
 export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
   const [storyText, setStoryText] = useState("");
@@ -28,7 +29,7 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
         const formData = new FormData();
         formData.append("file", storyFile);
 
-        const uploadRes = await fetch("https://chat-backend-chi-virid.vercel.app/api/upload", {
+        const uploadRes = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
           body: formData, // DO NOT set headers for FormData
         });
@@ -38,7 +39,7 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
 
         // ✅ Express returns { file: { filename, path } }
         // Build file URL for static use
-        fileUrl = `https://chat-backend-chi-virid.vercel.app/api/uploads/${data.file.filename}`;
+        fileUrl = `${API_BASE}/api/uploads/${data.file.filename}`;
       }
 
       const newStory = {
@@ -51,7 +52,7 @@ export default function StoryModal({ currentUser, onClose, onStoryUpload }) {
       };
 
       // save story to db.json (JSON-server)
-      await fetch("https://chat-backend-chi-virid.vercel.app/api/stories", {
+      await fetch(`${API_BASE}/api/stories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newStory),

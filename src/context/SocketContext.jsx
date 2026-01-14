@@ -3,7 +3,7 @@ import io from "socket.io-client";
 
 // Setup socket connection
 // Adjust URL if backend is hosted elsewhere
-const SOCKET_URL = "http://localhost:3000";
+const SOCKET_URL = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
 const SocketContext = createContext();
 

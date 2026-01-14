@@ -7,8 +7,9 @@ import { RiChatNewLine } from "react-icons/ri";
 import Footer from "./Footer";
 import StoryBar from "./StoryBar";
 import StoryModal from "./StoryModal";
+import { useSocket } from "../context/SocketContext";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = `${process.env.REACT_APP_API_BASE || "http://localhost:3000"}/api`;
 
 export default function ChatPage() {
   const { contacts, setContacts, currentUser } = useContacts();
@@ -24,6 +25,7 @@ export default function ChatPage() {
 
   const navigate = useNavigate();
   const currentUserId = currentUser?.id || "user-123";
+  const socket = useSocket();
 
   const [stories, setStories] = useState([]);
 
@@ -63,6 +65,28 @@ export default function ChatPage() {
   useEffect(() => {
     fetchContacts();
   }, [fetchContacts]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewStory = (story) => {
+      console.log("Real-time: New story received", story);
+      fetchStories();
+    };
+
+    const handleDeleteStory = (storyId) => {
+      console.log("Real-time: Story deleted", storyId);
+      fetchStories();
+    };
+
+    socket.on("new_story", handleNewStory);
+    socket.on("delete_story", handleDeleteStory);
+
+    return () => {
+      socket.off("new_story", handleNewStory);
+      socket.off("delete_story", handleDeleteStory);
+    };
+  }, [socket, fetchStories]);
 
   const toggleChatSelection = (id) => {
     setSelectedChats((prev) =>
