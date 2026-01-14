@@ -27,6 +27,17 @@ export default function ChatPage() {
 
   const [stories, setStories] = useState([]);
 
+  // ✅ Join socket room globally
+  useEffect(() => {
+    if (socket && currentUser) {
+      const myId = (currentUser._id || currentUser.id || currentUser.externalId)?.toString();
+      if (myId) {
+        console.log(`🔌 ChatPage joining socket room: ${myId}`);
+        socket.emit("join", myId);
+      }
+    }
+  }, [socket, currentUser]);
+
   // Move fetchStories outside useEffect so it can be reused
   const fetchStories = useCallback(async () => {
     const res = await fetch(`${API_URL}/stories`);

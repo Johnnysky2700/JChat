@@ -234,17 +234,20 @@ export default function ChatDetails() {
   const handleSendMessage = async () => {
     if (!message.trim() && !attachmentPreview) return;
 
-    const myId = currentUser?._id || currentUser?.id || currentUser?.externalId;
+    const myId = (currentUser?._id || currentUser?.id)?.toString();
     if (!myId) {
       alert("You must be logged in to send messages");
       return;
     }
 
+    // Recipient ID from the fetched contact if available, fallback to URL param
+    const toId = (contact?._id || contact?.id || id)?.toString();
+
     const newMessage = {
       sender: myId,
       text: message,
       timestamp: new Date().toISOString(),
-      contactId: id,
+      contactId: toId,
       type: attachmentPreview?.type || "text",
       attachmentUrl: attachmentPreview?.url || null,
       attachmentName: attachmentPreview?.file?.name || null,
@@ -257,7 +260,8 @@ export default function ChatDetails() {
         body: JSON.stringify(newMessage),
       });
 
-      await fetch(`${API_URL}/users/${id}`, {
+      // Update last message safely
+      fetch(`${API_URL}/users/${toId || id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -266,18 +270,16 @@ export default function ChatDetails() {
         body: JSON.stringify({
           lastMessage: newMessage.text || "📎 Attachment",
         }),
-      });
+      }).catch(err => console.error("Update lastMsg failed", err));
 
       setMessages((prev) => [...prev, newMessage]);
 
       // Emit socket message
-      if (socket) {
+      if (socket && isConnected) {
+        console.log(`📡 Emitting message to ${toId}`, newMessage);
         socket.emit("send_message", {
-          to: id, // Recipient ID
-          message: {
-            ...newMessage,
-            sender: myId, // valid ID
-          },
+          to: toId,
+          message: newMessage,
         });
       }
 
@@ -288,26 +290,26 @@ export default function ChatDetails() {
     }
   };
 
-  // Listen for incoming messages
+  // Listen for incoming messages & Handle Join
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !currentUser) return;
 
-    // Join my own room to receive messages
-    const myId = currentUser?._id || currentUser?.id;
-    if (!myId) {
-      console.warn("No current user ID found, cannot join socket room");
-      return;
+    const myId = (currentUser._id || currentUser.id)?.toString();
+    if (myId) {
+      console.log(`🔌 Joining socket room: ${myId}`);
+      socket.emit("join", myId);
     }
 
-    socket.emit("join", myId);
-
     const handleReceiveMessage = (incomingMsg) => {
-      console.log("Received message:", incomingMsg);
-      // Check if this message belongs to the current open chat
-      // It belongs if the SENDER is the current contact ID 'id'
-      if (String(incomingMsg.sender) === String(id)) {
+      console.log("📩 Socket received message:", incomingMsg);
+
+      const senderId = (incomingMsg.sender?._id || incomingMsg.sender?.id || incomingMsg.sender)?.toString();
+      const currentContactId = (contact?._id || contact?.id || id)?.toString();
+
+      if (senderId === currentContactId) {
         setMessages((prev) => [...prev, incomingMsg]);
-        setFilteredMessages((prev) => [...prev, incomingMsg]);
+      } else {
+        console.log(`ℹ️ Message from ${senderId} ignored (current chat is ${currentContactId})`);
       }
     };
 
@@ -316,7 +318,7 @@ export default function ChatDetails() {
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
-  }, [socket, currentUser, id]);
+  }, [socket, currentUser?._id, currentUser?.id, contact?._id, contact?.id, id]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black relative">
