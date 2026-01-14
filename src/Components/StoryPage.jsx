@@ -25,7 +25,7 @@ export default function StoryPage() {
     } catch (err) {
       console.error(err);
     }
-  }, [userId]);
+  }, [userId, API_BASE]);
 
   useEffect(() => {
     fetchStories();
