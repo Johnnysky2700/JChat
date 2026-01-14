@@ -11,7 +11,7 @@ import EventModal from "./EventModal";
 import { useSocket } from "../context/SocketContext";
 import { useContacts } from "../ContactContext";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = `${process.env.REACT_APP_API_BASE || "http://localhost:3000"}/api`;
 
 export default function ChatDetails() {
   const [message, setMessage] = useState("");
@@ -399,7 +399,7 @@ export default function ChatDetails() {
                     src={
                       (msg.attachmentUrl || msg.src).startsWith("http")
                         ? msg.attachmentUrl || msg.src
-                        : `http://localhost:3000${msg.attachmentUrl || msg.src}`
+                        : `${process.env.REACT_APP_API_BASE || "http://localhost:3000"}${msg.attachmentUrl || msg.src}`
                     }
                     alt="media"
                     className="w-full rounded-lg"

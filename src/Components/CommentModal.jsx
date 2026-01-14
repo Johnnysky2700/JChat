@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
 
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
+
 export default function CommentModal({ postId, onClose }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
@@ -9,7 +11,7 @@ export default function CommentModal({ postId, onClose }) {
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const res = await fetch(`https://chat-backend-chi-virid.vercel.app/api/comments?postId=${postId}`);
+        const res = await fetch(`${API_BASE}/api/comments?postId=${postId}`);
         const data = await res.json();
         setComments(data);
       } catch (error) {
@@ -29,7 +31,7 @@ export default function CommentModal({ postId, onClose }) {
     };
 
     try {
-      const res = await fetch("https://chat-backend-chi-virid.vercel.app/api/comments", {
+      const res = await fetch(`${API_BASE}/api/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(comment),

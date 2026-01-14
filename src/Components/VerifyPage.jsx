@@ -27,7 +27,7 @@ export default function VerifyPage() {
 
     setLoading(true);
     try {
-      const API_URL = "http://localhost:3000/api/auth/send-otp"; // Use local for dev
+      const API_URL = `${process.env.REACT_APP_API_BASE || "http://localhost:3000"}/api/auth/send-otp`;
       const response = await fetch(
         API_URL,
         {

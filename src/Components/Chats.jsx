@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { MdChevronLeft } from "react-icons/md";
 import Footer from './Footer';
 
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
+
 export default function Chats() {
   const navigate = useNavigate();
   const [saveToPhotos, setSaveToPhotos] = useState(false);
@@ -10,7 +12,7 @@ export default function Chats() {
   const [keepArchived, setKeepArchived] = useState(true);
 
   useEffect(() => {
-    fetch("https://chat-backend-chi-virid.vercel.app/api/chatSettings")
+    fetch(`${API_BASE}/api/chatSettings`)
       .then((res) => res.json())
       .then((data) => {
         setSaveToPhotos(data.saveToPhotos);
@@ -20,7 +22,7 @@ export default function Chats() {
   }, []);
 
   const updateSetting = async (field, value) => {
-    await fetch(`https://chat-backend-chi-virid.vercel.app/api/chatSettings`, {
+    await fetch(`${API_BASE}/api/chatSettings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value }),
@@ -34,7 +36,7 @@ export default function Chats() {
   };
 
   const handleAction = async (action) => {
-    const response = await fetch(`https://chat-backend-chi-virid.vercel.app/api/chats/${action}`, {
+    const response = await fetch(`${API_BASE}/api/chats/${action}`, {
       method: "POST",
     });
     if (response.ok) {

@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
 
     if (storedUser && storedToken) {
       const parsedUser = JSON.parse(storedUser);
-      const API_BASE = process.env.REACT_APP_API_BASE || "https://chat-backend-chi-virid.vercel.app";
+      const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
       // Fetch fresh data from backend to get latest edits
       fetch(`${API_BASE}/api/users?email=${parsedUser.email}`, {
