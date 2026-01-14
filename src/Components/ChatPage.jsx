@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useContacts } from "../ContactContext";
 import { FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ export default function ChatPage() {
   // ✅ ADDED missing state
 
   const navigate = useNavigate();
-  const currentUserId = currentUser?.id || "user-123";
+
   const socket = useSocket();
 
   const [stories, setStories] = useState([]);
