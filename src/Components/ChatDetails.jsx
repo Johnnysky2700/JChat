@@ -313,10 +313,20 @@ export default function ChatDetails() {
       }
     };
 
+    const handleStatusChange = (statusData) => {
+      console.log("📡 Socket status change:", statusData);
+      const currentContactId = (contact?._id || contact?.id || id)?.toString();
+      if (statusData.userId === currentContactId) {
+        setContact((prev) => (prev ? { ...prev, online: statusData.online } : prev));
+      }
+    };
+
     socket.on("receive_message", handleReceiveMessage);
+    socket.on("user_status_change", handleStatusChange);
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
+      socket.off("user_status_change", handleStatusChange);
     };
   }, [socket, currentUser, contact?._id, contact?.id, id]);
 
@@ -333,8 +343,8 @@ export default function ChatDetails() {
             <h2 className="text-base dark:text-white">
               {contact?.name || "Loading..."}
             </h2>
-            <span className={`text-xs ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
-              {isConnected ? 'Real-time On' : 'Connecting...'}
+            <span className={`text-xs ${contact?.online ? 'text-green-500' : 'text-gray-500'}`}>
+              {contact?.online ? 'Online' : 'Offline'}
             </span>
           </div>
         </div>
