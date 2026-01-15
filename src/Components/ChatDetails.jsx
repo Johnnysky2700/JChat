@@ -159,19 +159,14 @@ export default function ChatDetails() {
         const myId = (currentUser?._id || currentUser?.id)?.toString();
         const contactId = (contact?._id || contact?.id || id)?.toString();
 
+        console.log("🔍 Fetching messages logic:", { myId, contactId });
+
         let filtered = msgData.filter((msg) => {
           const senderId = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString();
           const msgContactId = (msg.contactId?._id || msg.contactId?.id || msg.contactId)?.toString();
 
           const isSentByMe = senderId === myId && msgContactId === contactId;
           const isReceived = senderId === contactId && msgContactId === myId;
-
-          // Legacy support: if backend logic was just 'contactId' = chat partner for both sides
-          // But based on my reasoning, we need bidirectional check.
-          // Fallback: the original code just checked contactId === id.
-          // If the backend stores 'contactId' as 'the other person', then:
-          // - Sent: sender=me, contactId=them
-          // - Received: sender=them, contactId=me
 
           return isSentByMe || isReceived;
         });
@@ -249,6 +244,7 @@ export default function ChatDetails() {
 
     const newMessage = {
       sender: myId,
+      senderId: myId, // Mongo ID if available
       text: message,
       timestamp: new Date().toISOString(),
       contactId: toId,
@@ -395,7 +391,7 @@ export default function ChatDetails() {
         {filteredMessages.map((msg, index) => (
           <div
             key={msg.id || index}
-            className={`flex ${msg.sender === "you" ? "justify-end" : "justify-start"
+            className={`flex ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString()) ? "justify-end" : "justify-start"
               }`}
           >
             <div className="max-w-[75%]">
@@ -412,7 +408,7 @@ export default function ChatDetails() {
                   />
                   {msg.text && (
                     <div
-                      className={`mt-1 p-2 rounded-lg text-sm ${msg.sender === "you"
+                      className={`mt-1 p-2 rounded-lg text-sm ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 dark:bg-gray-700"
                         }`}
@@ -423,7 +419,7 @@ export default function ChatDetails() {
                 </div>
               ) : (
                 <div
-                  className={`p-3 rounded-lg text-sm ${msg.sender === "you"
+                  className={`p-3 rounded-lg text-sm ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 dark:bg-gray-700"
                     }`}
@@ -432,7 +428,7 @@ export default function ChatDetails() {
                 </div>
               )}
               <div
-                className={`text-[10px] mt-1 text-right ${msg.sender === "you" ? "text-white/80" : "text-gray-500"
+                className={`text-[10px] mt-1 text-right ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString()) ? "text-white/80" : "text-gray-500"
                   }`}
               >
                 {msg.timestamp &&
