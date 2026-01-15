@@ -30,7 +30,7 @@ export default function ChatPage() {
   // ✅ Join socket room globally
   useEffect(() => {
     if (socket && currentUser) {
-      const myId = (currentUser._id || currentUser.id || currentUser.externalId)?.toString();
+      const myId = (currentUser._id || currentUser.id)?.toString();
       if (myId) {
         console.log(`🔌 ChatPage joining socket room: ${myId}`);
         socket.emit("join", myId);

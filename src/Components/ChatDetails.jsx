@@ -156,11 +156,15 @@ export default function ChatDetails() {
 
         // Filter if /messages exists
         // We want messages where (sender == me AND contactId == them) OR (sender == them AND contactId == me)
-        const myId = currentUser?._id || currentUser?.id || currentUser?.externalId;
+        const myId = (currentUser?._id || currentUser?.id)?.toString();
+        const contactId = (contact?._id || contact?.id || id)?.toString();
 
         let filtered = msgData.filter((msg) => {
-          const isSentByMe = String(msg.sender) === String(myId) && String(msg.contactId) === String(id);
-          const isReceived = String(msg.sender) === String(id) && String(msg.contactId) === String(myId);
+          const senderId = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString();
+          const msgContactId = (msg.contactId?._id || msg.contactId?.id || msg.contactId)?.toString();
+
+          const isSentByMe = senderId === myId && msgContactId === contactId;
+          const isReceived = senderId === contactId && msgContactId === myId;
 
           // Legacy support: if backend logic was just 'contactId' = chat partner for both sides
           // But based on my reasoning, we need bidirectional check.
@@ -294,7 +298,7 @@ export default function ChatDetails() {
   useEffect(() => {
     if (!socket || !currentUser) return;
 
-    const myId = (currentUser._id || currentUser.id)?.toString();
+    const myId = (currentUser?._id || currentUser?.id)?.toString();
     if (myId) {
       console.log(`🔌 Joining socket room: ${myId}`);
       socket.emit("join", myId);
