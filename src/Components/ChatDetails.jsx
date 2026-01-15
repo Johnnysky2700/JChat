@@ -201,7 +201,7 @@ export default function ChatDetails() {
     };
 
     fetchMessages();
-  }, [id, currentUser?._id, currentUser?.id, currentUser?.externalId]);
+  }, [id, currentUser?._id, currentUser?.id, currentUser?.externalId, contact?._id, contact?.id]);
 
   // ✅ Fetch contact info
   useEffect(() => {
