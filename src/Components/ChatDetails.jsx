@@ -165,8 +165,16 @@ export default function ChatDetails() {
           const senderId = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString();
           const msgContactId = (msg.contactId?._id || msg.contactId?.id || msg.contactId)?.toString();
 
-          const isSentByMe = senderId === myId && msgContactId === contactId;
-          const isReceived = senderId === contactId && msgContactId === myId;
+          const myMongoId = currentUser?._id?.toString();
+          const myExtId = currentUser?.externalId?.toString() || currentUser?.id?.toString();
+
+          const contactMongoId = contact?._id?.toString();
+          const contactExtId = contact?.externalId?.toString() || contact?.id?.toString() || id?.toString();
+
+          const isSentByMe = (senderId === myMongoId || senderId === myExtId) &&
+            (msgContactId === contactMongoId || msgContactId === contactExtId);
+          const isReceived = (senderId === contactMongoId || senderId === contactExtId) &&
+            (msgContactId === myMongoId || msgContactId === myExtId);
 
           return isSentByMe || isReceived;
         });
@@ -304,12 +312,14 @@ export default function ChatDetails() {
       console.log("📩 Socket received message:", incomingMsg);
 
       const senderId = (incomingMsg.sender?._id || incomingMsg.sender?.id || incomingMsg.sender)?.toString();
-      const currentContactId = (contact?._id || contact?.id || id)?.toString();
 
-      if (senderId === currentContactId) {
+      const contactMongoId = contact?._id?.toString();
+      const contactExtId = contact?.externalId?.toString() || contact?.id?.toString() || id?.toString();
+
+      if (senderId === contactMongoId || senderId === contactExtId) {
         setMessages((prev) => [...prev, incomingMsg]);
       } else {
-        console.log(`ℹ️ Message from ${senderId} ignored (current chat is ${currentContactId})`);
+        console.log(`ℹ️ Message from ${senderId} ignored (current chat is ${contactMongoId}/${contactExtId})`);
       }
     };
 
@@ -341,7 +351,7 @@ export default function ChatDetails() {
           />
           <div>
             <h2 className="text-base dark:text-white">
-              {contact?.name || "Loading..."}
+              {contact?.name || contact?.email?.split('@')[0] || "Unknown"}
             </h2>
             <span className={`text-xs ${contact?.online ? 'text-green-500' : 'text-gray-500'}`}>
               {contact?.online ? 'Online' : 'Offline'}
