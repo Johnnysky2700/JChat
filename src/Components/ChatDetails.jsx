@@ -351,7 +351,9 @@ export default function ChatDetails() {
           />
           <div>
             <h2 className="text-base dark:text-white">
-              {contact?.name || contact?.email?.split('@')[0] || "Unknown"}
+              {contact?.firstName && contact?.lastName
+                ? `${contact.firstName} ${contact.lastName}`
+                : contact?.name || contact?.email?.split('@')[0] || "Unknown"}
             </h2>
             <span className={`text-xs ${contact?.online ? 'text-green-500' : 'text-gray-500'}`}>
               {contact?.online ? 'Online' : 'Offline'}
