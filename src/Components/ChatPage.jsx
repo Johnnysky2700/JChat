@@ -133,7 +133,7 @@ export default function ChatPage() {
   const filteredContacts = contacts.filter(
     (contact) =>
       contact.lastMessage &&
-      (contact.name || "Unknown").toLowerCase().includes(search.toLowerCase())
+      (contact.name || contact.firstName || "Unknown").toLowerCase().includes(search.toLowerCase())
   );
 
   const [showMenu, setShowMenu] = useState(false);
@@ -278,7 +278,11 @@ export default function ChatPage() {
                 </div>
               </div>
               <div>
-                <p className="font-medium">{contact.name}</p>
+                <p className="font-medium">
+                  {contact.firstName && contact.lastName
+                    ? `${contact.firstName} ${contact.lastName}`
+                    : contact.name || "Unknown User"}
+                </p>
                 <p className="text-gray-400 text-sm">
                   {contact.lastMessage || "Started chat"}
                 </p>

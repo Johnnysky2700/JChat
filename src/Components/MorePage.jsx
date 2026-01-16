@@ -41,10 +41,10 @@ export default function MorePage() {
   }, [currentUser?.phone, setCurrentUser]);
 
   const handleLogout = () => {
-  setCurrentUser(null); // clear context
-  localStorage.removeItem("currentUser"); // clear localStorage
-  navigate("/VerifyPage"); // or wherever login page is
-};
+    setCurrentUser(null); // clear context
+    localStorage.removeItem("currentUser"); // clear localStorage
+    navigate("/VerifyPage"); // or wherever login page is
+  };
 
   const menuItems = [
     { label: 'Account', icon: <RiUserLine />, path: '/Account' },
@@ -82,7 +82,9 @@ export default function MorePage() {
             </div>
             <div>
               <p className="font-semibold">
-                {userData.firstName} {userData.lastName}
+                {userData.firstName && userData.lastName
+                  ? `${userData.firstName} ${userData.lastName}`
+                  : userData.name || "Unknown User"}
               </p>
             </div>
           </div>
