@@ -204,7 +204,7 @@ export default function ChatDetails() {
     };
 
     fetchMessages();
-  }, [id, currentUser?._id, currentUser?.id, currentUser?.externalId, contact?._id, contact?.id]);
+  }, [id, currentUser?._id, currentUser?.id, currentUser?.externalId, contact?._id, contact?.id, contact?.externalId]);
 
   // ✅ Fetch contact info
   useEffect(() => {
@@ -338,7 +338,7 @@ export default function ChatDetails() {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("user_status_change", handleStatusChange);
     };
-  }, [socket, currentUser, contact?._id, contact?.id, id]);
+  }, [socket, currentUser, contact?._id, contact?.id, contact?.externalId, id]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black relative">
