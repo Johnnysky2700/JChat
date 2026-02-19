@@ -8,6 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AttachmentMenu from "./AttachmentMenu";
 import PollModal from "./PollModal";
 import EventModal from "./EventModal";
+import ContactPicker from "./ContactPicker";
 import { useSocket } from "../context/SocketContext";
 import { useContacts } from "../ContactContext";
 
@@ -24,6 +25,7 @@ export default function ChatDetails() {
   const [searchMode, setSearchMode] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
   const [showEvent, setShowEvent] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
   const [selectedMessages, setSelectedMessages] = useState([]);
   const [selectMode, setSelectMode] = useState(false);
@@ -123,6 +125,122 @@ export default function ChatDetails() {
     };
 
     input.click();
+  };
+
+  // ✅ Handle Poll Submit
+  const handlePollSubmit = (pollData) => {
+    // pollData: { question, options: ["opt1", "opt2"] }
+    // Transform options to object structure if needed by backend, 
+    // but our backend expects { question, options: [{ text, votes: [] }] } 
+    // The modal gives us strings, so we map them.
+    const formattedOptions = pollData.options.map(opt => ({ text: opt, votes: [] }));
+
+    sendRichMessage({
+      type: "poll",
+      text: "📊 Poll",
+      poll: {
+        question: pollData.question,
+        options: formattedOptions
+      }
+    });
+    setShowPoll(false);
+  };
+
+  // ✅ Handle Event Submit
+  const handleEventSubmit = (eventData) => {
+    // eventData: { title, date }
+    sendRichMessage({
+      type: "event",
+      text: "📅 Event",
+      event: {
+        title: eventData.title,
+        date: eventData.date,
+        location: "TBD" // Modal doesn't have location yet, fallback
+      }
+    });
+    setShowEvent(false);
+  };
+
+  // ✅ Handle Contact Select
+  const handleContactSelect = (selectedContact) => {
+    sendRichMessage({
+      type: "contact",
+      text: "👤 Contact",
+      contactInfo: {
+        name: selectedContact.name || `${selectedContact.firstName || ""} ${selectedContact.lastName || ""}`,
+        phone: selectedContact.phone,
+        avatar: selectedContact.avatar,
+        id: selectedContact._id || selectedContact.id
+      }
+    });
+    setShowContactPicker(false);
+  };
+
+  // ✅ Handle Location
+  const handleLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        sendRichMessage({
+          type: "location",
+          text: "📍 Location",
+          location: {
+            latitude,
+            longitude,
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}` // Simple fallback
+          }
+        });
+        setShowAttachmentMenu(false);
+      },
+      (error) => {
+        alert("Unable to retrieve your location");
+        console.error(error);
+      }
+    );
+  };
+
+  // ✅ Helper to send rich messages immediately (bypassing the text input state)
+  const sendRichMessage = async (msgData) => {
+    const myId = (currentUser?._id || currentUser?.id)?.toString();
+    if (!myId) return;
+
+    const toId = (contact?._id || contact?.id || id)?.toString();
+
+    const newMessage = {
+      sender: myId,
+      senderId: myId,
+      timestamp: new Date().toISOString(),
+      contactId: toId,
+      ...msgData
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMessage),
+      });
+
+      if (res.ok) {
+        const savedMsg = await res.json();
+        setMessages((prev) => [...prev, savedMsg]);
+
+        // Emit to socket
+        if (socket && isConnected) {
+          socket.emit("send_message", {
+            to: toId,
+            message: savedMsg,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send rich message:", err);
+    }
   };
 
   const handleCamera = () => {
@@ -316,8 +434,15 @@ export default function ChatDetails() {
       const contactMongoId = contact?._id?.toString();
       const contactExtId = contact?.externalId?.toString() || contact?.id?.toString() || id?.toString();
 
-      if (senderId === contactMongoId || senderId === contactExtId) {
-        setMessages((prev) => [...prev, incomingMsg]);
+      if (senderId === contactMongoId || senderId === contactExtId || senderId === myId) {
+        // Check if message already exists (by ID) to support updates (like Poll votes)
+        setMessages((prev) => {
+          const exists = prev.find(m => (m._id === incomingMsg._id || m.id === incomingMsg._id) && incomingMsg._id);
+          if (exists) {
+            return prev.map(m => (m._id === incomingMsg._id || m.id === incomingMsg._id) ? incomingMsg : m);
+          }
+          return [...prev, incomingMsg];
+        });
       } else {
         console.log(`ℹ️ Message from ${senderId} ignored (current chat is ${contactMongoId}/${contactExtId})`);
       }
@@ -417,7 +542,8 @@ export default function ChatDetails() {
               }`}
           >
             <div className="max-w-[75%]">
-              {msg.type === "image" && (msg.attachmentUrl || msg.src) ? (
+              {/* 🖼️ IMAGE */}
+              {msg.type === "image" && (msg.attachmentUrl || msg.src) && (
                 <div className="flex flex-col">
                   <img
                     src={
@@ -426,24 +552,174 @@ export default function ChatDetails() {
                         : `${process.env.REACT_APP_API_BASE || "http://localhost:3000"}${msg.attachmentUrl || msg.src}`
                     }
                     alt="media"
-                    className="w-full rounded-lg"
+                    className="w-full rounded-lg mb-1"
                   />
-                  {msg.text && (
-                    <div
-                      className={`mt-1 p-2 rounded-lg text-sm ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 dark:bg-gray-700"
-                        }`}
-                    >
-                      {msg.text}
-                    </div>
-                  )}
                 </div>
-              ) : (
+              )}
+
+              {/* 📄 DOCUMENT */}
+              {msg.type === "document" && (
+                <div className={`p-3 rounded-lg flex items-center gap-3 ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 dark:text-white"
+                  }`}>
+                  <div className="text-2xl">📄</div>
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="truncate font-medium text-sm">{msg.attachmentName || "Document"}</span>
+                    <a
+                      href={msg.attachmentUrl?.startsWith("http") ? msg.attachmentUrl : `${API_URL.replace('/api', '')}${msg.attachmentUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs underline opacity-80"
+                    >
+                      Download
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* 📍 LOCATION */}
+              {msg.type === "location" && msg.location && (
+                <div className={`p-3 rounded-lg ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 dark:text-white"
+                  }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">📍</span>
+                    <span className="font-bold text-sm">Location</span>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs underline flex flex-col"
+                  >
+                    <span>Latitude: {msg.location.latitude}</span>
+                    <span>Longitude: {msg.location.longitude}</span>
+                  </a>
+                </div>
+              )}
+
+              {/* 👤 CONTACT */}
+              {msg.type === "contact" && msg.contactInfo && (
+                <div className={`p-3 rounded-lg min-w-[200px] ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 dark:text-white"
+                  }`}>
+                  <div className="flex items-center gap-3 border-b border-white/20 pb-2 mb-2">
+                    {msg.contactInfo.avatar ? (
+                      <img src={msg.contactInfo.avatar} alt="avatar" className="w-10 h-10 rounded-full bg-gray-300" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-bold">
+                        {msg.contactInfo.name?.[0]}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-bold text-sm">{msg.contactInfo.name}</p>
+                      <p className="text-xs opacity-80">Contact</p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <button
+                      className="text-xs font-medium px-3 py-1 bg-white/20 rounded-full hover:bg-white/30 transition"
+                      onClick={() => alert(`Message ${msg.contactInfo.name} (Mock Action)`)}
+                    >
+                      Message
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 📊 POLL */}
+              {msg.type === "poll" && msg.poll && (
+                <div className={`p-3 rounded-lg min-w-[250px] ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 dark:text-white"
+                  }`}>
+                  <p className="font-bold mb-3 text-sm">{msg.poll.question}</p>
+                  <div className="space-y-2">
+                    {msg.poll.options?.map((opt, idx) => {
+                      const totalVotes = msg.poll.options.reduce((acc, o) => acc + (o.votes?.length || 0), 0);
+                      const percent = totalVotes > 0 ? Math.round(((opt.votes?.length || 0) / totalVotes) * 100) : 0;
+                      const hasVoted = opt.votes?.includes((currentUser?._id || currentUser?.id)?.toString());
+
+                      return (
+                        <div
+                          key={idx}
+                          className="relative cursor-pointer"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`${API_URL}/messages/${msg._id || msg.id}/vote`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: (currentUser?._id || currentUser?.id)?.toString(), optionIndex: idx })
+                              });
+                              if (res.ok) {
+                                const updatedMsg = await res.json();
+                                setMessages(prev => prev.map(m => (m._id === updatedMsg._id || m.id === updatedMsg._id) ? updatedMsg : m));
+                                if (socket) socket.emit("vote_update", { to: contact?._id || contact?.id || id, message: updatedMsg });
+                              }
+                            } catch (e) { console.error(e); }
+                          }}
+                        >
+                          {/* Progress Bar Background */}
+                          <div className="absolute inset-0 bg-black/10 dark:bg-white/10 rounded overflow-hidden">
+                            <div
+                              className="h-full bg-green-500/30 transition-all duration-500"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                          <div className="relative p-2 flex justify-between items-center z-10 text-xs">
+                            <span className="font-medium">{opt.text}</span>
+                            <span>{percent}% {hasVoted && "✓"}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] mt-2 opacity-70 text-center">
+                    {msg.poll.options?.reduce((acc, o) => acc + (o.votes?.length || 0), 0)} votes
+                  </p>
+                </div>
+              )}
+
+              {/* 📅 EVENT */}
+              {msg.type === "event" && msg.event && (
+                <div className={`p-3 rounded-lg min-w-[200px] ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 dark:text-white"
+                  }`}>
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white/20 p-2 rounded text-center min-w-[50px]">
+                      <div className="text-[10px] uppercase font-bold text-red-300">
+                        {new Date(msg.event.date).toLocaleString('default', { month: 'short' })}
+                      </div>
+                      <div className="text-xl font-bold leading-none">
+                        {new Date(msg.event.date).getDate()}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{msg.event.title}</p>
+                      <p className="text-xs opacity-80">
+                        {new Date(msg.event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <button
+                        className="mt-2 text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition"
+                        onClick={() => alert("Added to calendar (Mock)")}
+                      >
+                        Add to Calendar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 💬 TEXT (Fallback) */}
+              {(msg.type === "text" || !msg.type) && msg.text && (
                 <div
                   className={`p-3 rounded-lg text-sm ${(msg.sender === "you" || (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === (currentUser?._id || currentUser?.id)?.toString())
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-100 dark:bg-gray-700"
+                    : "bg-gray-100 dark:bg-gray-700 dark:text-white"
                     }`}
                 >
                   {msg.text}
@@ -487,6 +763,8 @@ export default function ChatDetails() {
               if (action === "camera") handleCamera();
               if (action === "poll") setShowPoll(true);
               if (action === "event") setShowEvent(true);
+              if (action === "contact") setShowContactPicker(true);
+              if (action === "location") handleLocation();
               setShowAttachmentMenu(false);
             }}
             onClose={() => setShowAttachmentMenu(false)}
@@ -496,19 +774,19 @@ export default function ChatDetails() {
         {showPoll && (
           <PollModal
             onClose={() => setShowPoll(false)}
-            onSubmit={(data) => {
-              console.log("Poll:", data);
-              setShowPoll(false);
-            }}
+            onSubmit={handlePollSubmit}
           />
         )}
         {showEvent && (
           <EventModal
             onClose={() => setShowEvent(false)}
-            onSubmit={(data) => {
-              console.log("Event:", data);
-              setShowEvent(false);
-            }}
+            onSubmit={handleEventSubmit}
+          />
+        )}
+        {showContactPicker && (
+          <ContactPicker
+            onClose={() => setShowContactPicker(false)}
+            onSelect={handleContactSelect}
           />
         )}
 
